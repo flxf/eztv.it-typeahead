@@ -6,7 +6,7 @@
 // @match http://eztv.it/
 // ==/UserScript==
 
-// TODO: actual binary search
+// TODO: Binary search
 function lowerBound(arr, key) {
   var idx = 0;
   while (key > arr[idx]) {
@@ -18,6 +18,12 @@ function lowerBound(arr, key) {
 function upperBound(arr, key) {
   key = key.substr(0, key.length - 1) + String.fromCharCode(key.charCodeAt(key.length - 1) + 1);
   return lowerBound(arr, key);
+}
+
+function canonicalTerms(term) {
+  // TODO: Spend more time on this
+  term = term.replace('&', 'and').replace(/[^A-Za-z0-9 ]/g, '').toLowerCase();
+  return term;
 }
 
 var searchForm = document.getElementById('search');
@@ -40,9 +46,7 @@ for (var i = 1; i < selectOptions.length; i++) {
   var showTitle = selectOptions[i].text;
   showIndex[showId] = showTitle;
 
-  showTitle = showTitle.replace(/[^A-Za-z0-9 ]/g, '').toLowerCase();
-  showTitleWords = showTitle.split(' ');
-
+  showTitleWords = canonicalTerms(showTitle).split(' ');
   for (var j = 0; j < showTitleWords.length; j++) {
     var word = showTitleWords[j];
     if (word in invertedIndex) {
@@ -60,7 +64,7 @@ showTokens.sort();
 var autocompleteCss = (
 '.dropdown-entry {' +
 '  padding: 2px 4px 2px 4px;' +
-'  height: 20px;' +
+'  min-height: 20px;' +
 '}' +
 
 '.dropdown-entry:hover {' +
@@ -109,14 +113,17 @@ newInput.addEventListener('blur', function() {
 
 // Major sites poll input repeatedly for better feel
 newInput.addEventListener('keyup', function() {
+  var value = canonicalTerms(newInput.value);
+  if (!value) {
+    return;
+  }
+
   if (dropdown.firstChild) {
     dropdown.removeChild(dropdown.firstChild);
   }
 
   // This wrapper allows us to remove all entries at once
   var dropdownEntryWrapper = document.createElement('div');
-
-  var value = newInput.value.toLowerCase(); // not done yet
 
   var lb = lowerBound(showTokens, value);
   var ub = upperBound(showTokens, value);
