@@ -30,12 +30,7 @@ var searchForm = document.getElementById('search');
 var searchSelect = searchForm.getElementsByTagName('select')[0];
 var selectOptions = searchSelect.getElementsByTagName('option');
 
-// TODO: Less hacky
-var searchInput = searchForm.getElementsByTagName('div')[0];
-searchInput.parentNode.removeChild(searchInput);
-
-searchSelect.style.display = 'none';
-
+// Build search data-structures
 var showTokens = [];
 var invertedIndex = {};
 var showIndex = {};
@@ -61,14 +56,26 @@ showTokens = Object.keys(invertedIndex);
 showTokens.sort();
 
 // CSS stuff
+// TODO: Probably want to namespace this stuff
 var autocompleteCss = (
+'.dropdown {' +
+'  width: 398px;' +
+'  position: absolute;' +
+'  background: white;' +
+'  padding: 2px 0 2px 0;' +
+'  border: 1px solid;' +
+'  top: 24px;' +
+'  left: 0;' +
+'  display: none;' +
+'}' +
+
 '.dropdown-entry {' +
 '  padding: 2px 4px 2px 4px;' +
 '  min-height: 20px;' +
 '}' +
 
 '.dropdown-entry:hover {' +
-'  background: blue;' +
+'  background: #D8EAFC;' +
 '}');
 
 var autoStyle = document.createElement('style');
@@ -77,24 +84,21 @@ autoStyle.appendChild(document.createTextNode(autocompleteCss));
 document.head.appendChild(autoStyle);
 
 // DOM stuff
+// TODO: Less hacky
+var searchInput = searchForm.getElementsByTagName('div')[0];
+searchInput.parentNode.removeChild(searchInput);
+searchSelect.style.display = 'none';
+
+// Add new stuff
 searchForm.style.position = 'relative';
 
 var newInput = document.createElement('input');
 newInput.setAttribute('type', 'text');
-newInput.setAttribute('id', 'felix');
 newInput.style.float = 'left';
 newInput.style.width = '400px';
 
 var dropdown = document.createElement('div');
-dropdown.setAttribute('id', 'felixd');
-dropdown.style.width = '390px';
-dropdown.style.position = 'absolute';
-dropdown.style.background = 'white';
-dropdown.style.padding = '2px 0 2px 0';
-dropdown.style.border = '1px solid';
-dropdown.style.top = '24px';
-dropdown.style.left = '0px';
-dropdown.style.display = 'none';
+dropdown.className = 'dropdown';
 
 dropdown.addEventListener('click', function() {
   console.log('dropdown clicked');
@@ -107,35 +111,43 @@ newInput.addEventListener('focus', function() {
 });
 
 newInput.addEventListener('blur', function() {
-  // this is wrong
-  dropdown.style.display = 'none';
+  window.setTimeout(function() {
+    dropdown.style.display = 'none';
+  }, 200); // TODO: might sporadically not work
 });
 
 // Major sites poll input repeatedly for better feel
 newInput.addEventListener('keyup', function() {
+  if (dropdown.firstChild) {
+    dropdown.removeChild(dropdown.firstChild);
+  }
+
   var value = canonicalTerms(newInput.value);
   if (!value) {
     return;
   }
 
-  if (dropdown.firstChild) {
-    dropdown.removeChild(dropdown.firstChild);
-  }
-
   // This wrapper allows us to remove all entries at once
   var dropdownEntryWrapper = document.createElement('div');
 
-  var lb = lowerBound(showTokens, value);
-  var ub = upperBound(showTokens, value);
+  // figure out the weighting...
+  var values = value.split(' ');
+
+  // We're doing union, but should be doing intersection... or heuristic
   var matchingShows = {};
 
-  // Ugh. Really wish I had better abstractions
-  for (var i = lb; i < ub; i++) {
-    var submatch = invertedIndex[showTokens[i]];
-    for (var j = 0; j < submatch.length; j++) {
-      matchingShows[submatch[j]] = 1;
+  values.forEach(function(val) {
+    var lb = lowerBound(showTokens, value);
+    var ub = upperBound(showTokens, value);
+
+    // Ugh. Really wish I had better abstractions
+    for (var i = lb; i < ub; i++) {
+      var submatch = invertedIndex[showTokens[i]];
+      for (var j = 0; j < submatch.length; j++) {
+        matchingShows[submatch[j]] = 1;
+      }
     }
-  }
+  });
 
   for (var k in matchingShows) {
     var dropdownEntry = document.createElement('div');
