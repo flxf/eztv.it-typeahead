@@ -1,0 +1,4 @@
+EZTV Autocomplete
+=================
+
+A userscript replacing eztv.it's current search UI with a TV show autocomplete.
