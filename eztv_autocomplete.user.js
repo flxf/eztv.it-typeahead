@@ -59,6 +59,7 @@ showTokens.sort();
 // TODO: Probably want to namespace this stuff
 var autocompleteCss = (
 '.dropdown {' +
+'  min-height: 20px;' +
 '  width: 398px;' +
 '  position: absolute;' +
 '  background: white;' +
@@ -67,6 +68,12 @@ var autocompleteCss = (
 '  top: 24px;' +
 '  left: 0;' +
 '  display: none;' +
+'}' +
+
+'.dropdown a {' +
+'  font-weight: bold;' +
+'  text-decoration: none;' +
+'  display: block;' +
 '}' +
 
 '.dropdown-entry {' +
@@ -104,7 +111,14 @@ dropdown.addEventListener('click', function() {
   console.log('dropdown clicked');
 });
 
+dropdown.addEventListener('mouseover', function(e) {
+  console.log(e.target);
+  console.log(selected);
+  selected = e.target.getAttribute('data-item-id');
+});
+
 // TODO: arrow key navigation
+var selected = -1; // What am I doing?
 
 newInput.addEventListener('focus', function() {
   dropdown.style.display = 'block';
@@ -149,11 +163,22 @@ newInput.addEventListener('keyup', function() {
     }
   });
 
+  var item_id = 0;
   for (var k in matchingShows) {
     var dropdownEntry = document.createElement('div');
     dropdownEntry.className = 'dropdown-entry';
     dropdownEntry.appendChild(document.createTextNode(showIndex[k]));
-    dropdownEntryWrapper.appendChild(dropdownEntry);
+
+    var dropdownLinkEntry = document.createElement('a');
+    dropdownLinkEntry.setAttribute('href', '#');
+    dropdownLinkEntry.setAttribute('id', 'dropdown-item-' + item_id);
+    dropdownLinkEntry.setAttribute('data-show-id', k);
+    dropdownLinkEntry.setAttribute('data-item-id', item_id);
+    dropdownLinkEntry.appendChild(dropdownEntry);
+
+    dropdownEntryWrapper.appendChild(dropdownLinkEntry);
+
+    item_id++;
   }
 
   dropdown.appendChild(dropdownEntryWrapper);
