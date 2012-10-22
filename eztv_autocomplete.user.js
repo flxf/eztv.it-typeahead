@@ -81,7 +81,7 @@ var autocompleteCss = (
 '  min-height: 20px;' +
 '}' +
 
-'.dropdown-entry:hover {' +
+'.dropdown-entry.active {' +
 '  background: #D8EAFC;' +
 '}');
 
@@ -107,27 +107,35 @@ newInput.style.width = '400px';
 var dropdown = document.createElement('div');
 dropdown.className = 'dropdown';
 
-dropdown.addEventListener('click', function() {
-  console.log('dropdown clicked');
+dropdown.addEventListener('click', function(e) {
+  e.preventDefault();
+
+  var data_show_id = e.target.getAttribute('data-show-id');
 });
 
 dropdown.addEventListener('mouseover', function(e) {
-  console.log(e.target);
-  console.log(selected);
-  selected = e.target.getAttribute('data-item-id');
+  var data_item_id = e.target.getAttribute('data-item-id');
+  if (data_item_id) {
+    if (selected) {
+      var previous = document.getElementById('dropdown-item-' + selected);
+      previous.classList.remove('active');
+    }
+    selected = e.target.getAttribute('data-item-id');
+    var active = document.getElementById('dropdown-item-' + selected);
+    active.classList.add('active');
+  }
 });
 
 // TODO: arrow key navigation
-var selected = -1; // What am I doing?
+var selected = null;
+var dropdown_open = false;
 
 newInput.addEventListener('focus', function() {
   dropdown.style.display = 'block';
 });
 
-newInput.addEventListener('blur', function() {
-  window.setTimeout(function() {
-    dropdown.style.display = 'none';
-  }, 200); // TODO: might sporadically not work
+newInput.addEventListener('blur', function(e) {
+  console.log(e.target);
 });
 
 // Major sites poll input repeatedly for better feel
@@ -167,13 +175,13 @@ newInput.addEventListener('keyup', function() {
   for (var k in matchingShows) {
     var dropdownEntry = document.createElement('div');
     dropdownEntry.className = 'dropdown-entry';
+    dropdownEntry.setAttribute('id', 'dropdown-item-' + item_id);
+    dropdownEntry.setAttribute('data-show-id', k);
+    dropdownEntry.setAttribute('data-item-id', item_id);
     dropdownEntry.appendChild(document.createTextNode(showIndex[k]));
 
     var dropdownLinkEntry = document.createElement('a');
     dropdownLinkEntry.setAttribute('href', '#');
-    dropdownLinkEntry.setAttribute('id', 'dropdown-item-' + item_id);
-    dropdownLinkEntry.setAttribute('data-show-id', k);
-    dropdownLinkEntry.setAttribute('data-item-id', item_id);
     dropdownLinkEntry.appendChild(dropdownEntry);
 
     dropdownEntryWrapper.appendChild(dropdownLinkEntry);
