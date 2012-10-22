@@ -129,6 +129,7 @@ dropdown.addEventListener('mouseover', function(e) {
 // TODO: arrow key navigation
 var selected = null;
 var dropdown_open = false;
+var last_value = null;
 
 newInput.addEventListener('focus', function() {
   dropdown.style.display = 'block';
@@ -138,8 +139,21 @@ newInput.addEventListener('blur', function(e) {
   console.log(e.target);
 });
 
+newInput.addEventListener('keydown', function(e) {
+  if (e.keyCode == 38) {
+    e.preventDefault();
+  } else if (e.keyCode == 40) {
+    e.preventDefault();
+  }
+});
+
 // Major sites poll input repeatedly for better feel
-newInput.addEventListener('keyup', function() {
+newInput.addEventListener('keyup', function(e) {
+  if (newInput.value == last_value) {
+    return;
+  }
+  last_value = newInput.value;
+
   if (dropdown.firstChild) {
     dropdown.removeChild(dropdown.firstChild);
   }
