@@ -160,7 +160,14 @@ dropdown.className = 'dropdown';
 dropdown.addEventListener('click', function(e) {
   e.preventDefault();
 
-  var data_show_id = e.target.getAttribute('data-show-id');
+  var showId = e.target.getAttribute('data-show-id');
+  var itemId = parseInt(e.target.getAttribute('data-item-id'));
+  //searchSelect.options[itemId].selected = true;
+
+  var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
+  selectedOption.setAttribute('selected', true);
+
+  newInput.value = e.target.textContent;
 });
 
 function makeActive(past, future) {
@@ -182,12 +189,13 @@ dropdown.addEventListener('mouseover', function(e) {
   }
 });
 
-newInput.addEventListener('focus', function() {
+newInput.addEventListener('click', function(e) {
   dropdown.style.display = 'block';
+  e.stopPropagation();
 });
 
-newInput.addEventListener('blur', function(e) {
-  console.log(e.target);
+document.body.addEventListener('click', function(e) {
+  dropdown.style.display = 'none';
 });
 
 newInput.addEventListener('keydown', function(e) {
