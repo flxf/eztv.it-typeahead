@@ -78,7 +78,7 @@ TypeaheadData.prototype.search = function(query) {
 
   // TODO: Add a second index to pre-sort
   results.sort(function(a, b) {
-    return (a < b) ? -1 : 1;
+    return (a.title < b.title) ? -1 : 1;
   });
 
   return results;
