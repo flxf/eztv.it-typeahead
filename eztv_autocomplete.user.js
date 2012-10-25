@@ -6,54 +6,103 @@
 // @match http://eztv.it/
 // ==/UserScript==
 
-// TODO: Binary search
-function lowerBound(arr, key) {
-  var idx = 0;
-  while (key > arr[idx]) {
-    idx++;
-  }
-  return idx;
+var TypeaheadData = function(showData) {
+  var self = this;
+
+  this.showTokens = [];
+  this.invertedIndex = {};
+  this.showIndex = {};
+
+  // TODO: Retain the word indices
+  showData.forEach(function(show) {
+    self.showIndex[show.id] = show.title;
+
+    var terms = self.canonize(show.title).split(' ');
+    terms.forEach(function(term) {
+      if (term in self.invertedIndex) {
+        self.invertedIndex[term].push(show.id);
+      } else {
+        self.invertedIndex[term] = [ show.id ];
+      }
+    });
+  });
+
+  this.showTokens = Object.keys(self.invertedIndex);
+  this.showTokens.sort();
 }
 
-function upperBound(arr, key) {
-  key = key.substr(0, key.length - 1) + String.fromCharCode(key.charCodeAt(key.length - 1) + 1);
-  return lowerBound(arr, key);
-}
-
-function canonicalTerms(term) {
+TypeaheadData.prototype.canonize = function(query) {
   // TODO: Spend more time on this
-  term = term.replace('&', 'and').replace(/[^A-Za-z0-9 ]/g, '').toLowerCase();
-  return term;
+  return query.toLowerCase().replace('&', 'and').replace(/[^a-z0-9 ]/g, '');
 }
+
+TypeaheadData.prototype.search = function(query) {
+  var self = this;
+
+  function lowerBound(arr, key) {
+    var idx = 0;
+    while (key > arr[idx]) {
+      idx++;
+    }
+    return idx;
+  }
+
+  function upperBound(arr, key) {
+    key = key.substr(0, key.length - 1) + String.fromCharCode(key.charCodeAt(key.length - 1) + 1);
+    return lowerBound(arr, key);
+  }
+
+  // TODO: We're doing union, but should be doing intersection... or heuristic
+  var matchingShows = {};
+
+  var terms = this.canonize(query).split(' ');
+  terms.forEach(function(term) {
+    var lb = lowerBound(self.showTokens, term);
+    var ub = upperBound(self.showTokens, term);
+
+    for (var i = lb; i < ub; i++) {
+      var submatch = self.invertedIndex[self.showTokens[i]];
+      for (var j = 0; j < submatch.length; j++) {
+        matchingShows[submatch[j]] = 1;
+      }
+    }
+  });
+
+  var results = [];
+  for (var showId in matchingShows) {
+    results.push({
+      id: showId,
+      title: this.showIndex[showId]
+    });
+  }
+
+  // TODO: Add a second index to pre-sort
+  results.sort(function(a, b) {
+    return (a < b) ? -1 : 1;
+  });
+
+  return results;
+}
+
+// TODO: arrow key navigation
+var selected = null;
+var dropdown_open = false;
+var last_value = null;
 
 var searchForm = document.getElementById('search');
 var searchSelect = searchForm.getElementsByTagName('select')[0];
 var selectOptions = searchSelect.getElementsByTagName('option');
 
-// Build search data-structures
-var showTokens = [];
-var invertedIndex = {};
-var showIndex = {};
-
-// Extract the data values
-for (var i = 1; i < selectOptions.length; i++) {
-  var showId = selectOptions[i].getAttribute('value');
-  var showTitle = selectOptions[i].text;
-  showIndex[showId] = showTitle;
-
-  showTitleWords = canonicalTerms(showTitle).split(' ');
-  for (var j = 0; j < showTitleWords.length; j++) {
-    var word = showTitleWords[j];
-    if (word in invertedIndex) {
-      invertedIndex[word].push(showId);
-    } else {
-      invertedIndex[word] = [ showId ];
-    }
-  }
+var showData = [];
+for (var i = 0; i < selectOptions.length; i++) {
+  var optionElement = selectOptions[i];
+  showData.push({
+    id: optionElement.getAttribute('value'),
+    title: optionElement.text
+  });
 }
 
-showTokens = Object.keys(invertedIndex);
-showTokens.sort();
+var typeaheadData = new TypeaheadData(showData);
 
 // CSS stuff
 // TODO: Probably want to namespace this stuff
@@ -113,23 +162,25 @@ dropdown.addEventListener('click', function(e) {
   var data_show_id = e.target.getAttribute('data-show-id');
 });
 
+function makeActive(past, future) {
+  console.log(past);
+  console.log(future);
+
+  if (past) {
+    var previous = document.getElementById('dropdown-item-' + past);
+    previous.classList.remove('active');
+  }
+  var active = document.getElementById('dropdown-item-' + future);
+  active.classList.add('active');
+}
+
 dropdown.addEventListener('mouseover', function(e) {
   var data_item_id = e.target.getAttribute('data-item-id');
   if (data_item_id) {
-    if (selected) {
-      var previous = document.getElementById('dropdown-item-' + selected);
-      previous.classList.remove('active');
-    }
-    selected = e.target.getAttribute('data-item-id');
-    var active = document.getElementById('dropdown-item-' + selected);
-    active.classList.add('active');
+    makeActive(selected, data_item_id);
+    selected = parseInt(data_item_id);
   }
 });
-
-// TODO: arrow key navigation
-var selected = null;
-var dropdown_open = false;
-var last_value = null;
 
 newInput.addEventListener('focus', function() {
   dropdown.style.display = 'block';
@@ -140,9 +191,27 @@ newInput.addEventListener('blur', function(e) {
 });
 
 newInput.addEventListener('keydown', function(e) {
+  var nav = false;
+  var newval = null;
   if (e.keyCode == 38) {
-    e.preventDefault();
+    if (selected == 0) {
+      selected = num_results - 1;
+    } else {
+      newval = selected - 1;
+    }
+    nav = true;
   } else if (e.keyCode == 40) {
+    if (selected == num_results) {
+      newval = 0;
+    } else {
+      newval = selected + 1;
+    }
+    nav = true;
+  }
+
+  if (nav) {
+    makeActive(selected, newval);
+    selected = parseInt(newval);
     e.preventDefault();
   }
 });
@@ -158,41 +227,23 @@ newInput.addEventListener('keyup', function(e) {
     dropdown.removeChild(dropdown.firstChild);
   }
 
-  var value = canonicalTerms(newInput.value);
-  if (!value) {
+  if (!newInput.value) {
     return;
   }
+
+  var showResults = typeaheadData.search(newInput.value);
 
   // This wrapper allows us to remove all entries at once
   var dropdownEntryWrapper = document.createElement('div');
 
-  // figure out the weighting...
-  var values = value.split(' ');
-
-  // We're doing union, but should be doing intersection... or heuristic
-  var matchingShows = {};
-
-  values.forEach(function(val) {
-    var lb = lowerBound(showTokens, value);
-    var ub = upperBound(showTokens, value);
-
-    // Ugh. Really wish I had better abstractions
-    for (var i = lb; i < ub; i++) {
-      var submatch = invertedIndex[showTokens[i]];
-      for (var j = 0; j < submatch.length; j++) {
-        matchingShows[submatch[j]] = 1;
-      }
-    }
-  });
-
   var item_id = 0;
-  for (var k in matchingShows) {
+  showResults.forEach(function(show) {
     var dropdownEntry = document.createElement('div');
     dropdownEntry.className = 'dropdown-entry';
     dropdownEntry.setAttribute('id', 'dropdown-item-' + item_id);
-    dropdownEntry.setAttribute('data-show-id', k);
+    dropdownEntry.setAttribute('data-show-id', show.id);
     dropdownEntry.setAttribute('data-item-id', item_id);
-    dropdownEntry.appendChild(document.createTextNode(showIndex[k]));
+    dropdownEntry.appendChild(document.createTextNode(show.title));
 
     var dropdownLinkEntry = document.createElement('a');
     dropdownLinkEntry.setAttribute('href', '#');
@@ -201,7 +252,7 @@ newInput.addEventListener('keyup', function(e) {
     dropdownEntryWrapper.appendChild(dropdownLinkEntry);
 
     item_id++;
-  }
+  });
 
   dropdown.appendChild(dropdownEntryWrapper);
 });
