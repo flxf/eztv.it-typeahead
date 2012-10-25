@@ -162,7 +162,6 @@ dropdown.addEventListener('click', function(e) {
 
   var showId = e.target.getAttribute('data-show-id');
   var itemId = parseInt(e.target.getAttribute('data-item-id'));
-  //searchSelect.options[itemId].selected = true;
 
   var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
   selectedOption.setAttribute('selected', true);
@@ -199,29 +198,21 @@ document.body.addEventListener('click', function(e) {
 });
 
 newInput.addEventListener('keydown', function(e) {
-  var nav = false;
-  var newval = null;
-  if (e.keyCode == 38) {
-    if (selected == 0) {
-      newval = num_results;
-    } else {
-      newval = selected - 1;
-    }
-    nav = true;
-  } else if (e.keyCode == 40) {
-    if (selected == num_results) {
-      newval = 0;
-    } else {
-      newval = selected + 1;
-    }
-    nav = true;
+  if (!/(38|40|27)/.test(e.keyCode)) {
+    return;
   }
 
-  if (nav) {
-    makeActive(selected, newval);
-    selected = newval;
-    e.preventDefault();
+  e.preventDefault();
+
+  if (e.keyCode == 27) {
+    // TODO: Handle enter key
   }
+
+  var newval = (e.keyCode == 38) ? selected - 1 : selected + 1;
+  newval = (newval + (num_results + 1)) % (num_results + 1);
+
+  makeActive(selected, newval);
+  selected = newval;
 });
 
 // Major sites poll input repeatedly for better feel
