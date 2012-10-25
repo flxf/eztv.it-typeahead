@@ -88,6 +88,7 @@ TypeaheadData.prototype.search = function(query) {
 var selected = null;
 var dropdown_open = false;
 var last_value = null;
+var num_results = null;
 
 var searchForm = document.getElementById('search');
 var searchSelect = searchForm.getElementsByTagName('select')[0];
@@ -163,15 +164,14 @@ dropdown.addEventListener('click', function(e) {
 });
 
 function makeActive(past, future) {
-  console.log(past);
-  console.log(future);
-
-  if (past) {
+  if (past != num_results) {
     var previous = document.getElementById('dropdown-item-' + past);
     previous.classList.remove('active');
   }
-  var active = document.getElementById('dropdown-item-' + future);
-  active.classList.add('active');
+  if (future != num_results) {
+    var active = document.getElementById('dropdown-item-' + future);
+    active.classList.add('active');
+  }
 }
 
 dropdown.addEventListener('mouseover', function(e) {
@@ -195,7 +195,7 @@ newInput.addEventListener('keydown', function(e) {
   var newval = null;
   if (e.keyCode == 38) {
     if (selected == 0) {
-      selected = num_results - 1;
+      newval = num_results;
     } else {
       newval = selected - 1;
     }
@@ -211,7 +211,7 @@ newInput.addEventListener('keydown', function(e) {
 
   if (nav) {
     makeActive(selected, newval);
-    selected = parseInt(newval);
+    selected = newval;
     e.preventDefault();
   }
 });
@@ -232,6 +232,8 @@ newInput.addEventListener('keyup', function(e) {
   }
 
   var showResults = typeaheadData.search(newInput.value);
+  num_results = showResults.length;
+  selected = num_results;
 
   // This wrapper allows us to remove all entries at once
   var dropdownEntryWrapper = document.createElement('div');
