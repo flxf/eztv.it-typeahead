@@ -161,12 +161,7 @@ dropdown.addEventListener('click', function(e) {
   e.preventDefault();
 
   var showId = e.target.getAttribute('data-show-id');
-  var itemId = parseInt(e.target.getAttribute('data-item-id'));
-
-  var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
-  selectedOption.setAttribute('selected', true);
-
-  newInput.value = e.target.textContent;
+  makeSelect(showId);
 });
 
 function makeActive(past, future) {
@@ -178,6 +173,13 @@ function makeActive(past, future) {
     var active = document.getElementById('dropdown-item-' + future);
     active.classList.add('active');
   }
+}
+
+function makeSelect(showId) {
+  var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
+  selectedOption.setAttribute('selected', true);
+
+  newInput.value = selectedOption.text;
 }
 
 dropdown.addEventListener('mouseover', function(e) {
@@ -198,14 +200,20 @@ document.body.addEventListener('click', function(e) {
 });
 
 newInput.addEventListener('keydown', function(e) {
-  if (!/(38|40|27)/.test(e.keyCode)) {
+  if (!/(38|40|13)/.test(e.keyCode)) {
     return;
   }
 
   e.preventDefault();
+  e.stopPropagation();
 
-  if (e.keyCode == 27) {
-    // TODO: Handle enter key
+  if (e.keyCode == 13) {
+    dropdown.style.display = 'none';
+    if (selected != num_results) {
+      var selectedEntry = document.getElementById('dropdown-item-' + selected);
+      makeSelect(selectedEntry.getAttribute('data-show-id'));
+    }
+    return;
   }
 
   var newval = (e.keyCode == 38) ? selected - 1 : selected + 1;
