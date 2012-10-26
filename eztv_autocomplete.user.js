@@ -3,7 +3,7 @@
 // @description Replace EZTV's dropdown with a clever search autocomplete
 // @namespace ffx
 // @version 1
-// @match http://eztv.it/
+// @match http://eztv.it/*
 // ==/UserScript==
 
 var TypeaheadData = function(showData) {
@@ -84,6 +84,27 @@ TypeaheadData.prototype.search = function(query) {
   return results;
 }
 
+function makeActive(past, future) {
+  if (past != num_results) {
+    var previous = document.getElementById('dropdown-item-' + past);
+    previous.classList.remove('active');
+  }
+  if (future != num_results) {
+    var active = document.getElementById('dropdown-item-' + future);
+    active.classList.add('active');
+  }
+}
+
+function makeSelect(showId) {
+  var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
+  selectedOption.setAttribute('selected', true);
+
+  newInput.value = selectedOption.text;
+  searchForm.submit();
+}
+
+do {
+
 // TODO: arrow key navigation
 var selected = null;
 var dropdown_open = false;
@@ -91,11 +112,15 @@ var last_value = null;
 var num_results = null;
 
 var searchForm = document.getElementById('search');
+if (searchForm === null) {
+  break;
+}
+
 var searchSelect = searchForm.getElementsByTagName('select')[0];
 var selectOptions = searchSelect.getElementsByTagName('option');
 
 var showData = [];
-for (var i = 0; i < selectOptions.length; i++) {
+for (var i = 1; i < selectOptions.length; i++) {
   var optionElement = selectOptions[i];
   showData.push({
     id: optionElement.getAttribute('value'),
@@ -161,26 +186,11 @@ dropdown.addEventListener('click', function(e) {
   e.preventDefault();
 
   var showId = e.target.getAttribute('data-show-id');
-  makeSelect(showId);
+  console.log(showId);
+  if (showId !== null) {
+    makeSelect(showId);
+  }
 });
-
-function makeActive(past, future) {
-  if (past != num_results) {
-    var previous = document.getElementById('dropdown-item-' + past);
-    previous.classList.remove('active');
-  }
-  if (future != num_results) {
-    var active = document.getElementById('dropdown-item-' + future);
-    active.classList.add('active');
-  }
-}
-
-function makeSelect(showId) {
-  var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
-  selectedOption.setAttribute('selected', true);
-
-  newInput.value = selectedOption.text;
-}
 
 dropdown.addEventListener('mouseover', function(e) {
   var data_item_id = e.target.getAttribute('data-item-id');
@@ -268,3 +278,5 @@ newInput.addEventListener('keyup', function(e) {
 
 searchForm.insertBefore(dropdown, searchForm.firstChild);
 searchForm.insertBefore(newInput, searchForm.firstChild);
+
+} while(0);
