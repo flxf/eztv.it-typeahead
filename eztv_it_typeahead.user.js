@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name EZTV Autocomplete
-// @description Replace EZTV's dropdown with a clever search autocomplete
+// @name eztv.it typeahead
+// @description A typeahead for eztv.it search
 // @namespace ffx
 // @version 1
 // @match http://eztv.it/*
@@ -15,7 +15,7 @@ var TypeaheadData = function(showData) {
 
   // TODO: Retain the word indices
   showData.forEach(function(show) {
-    self.showIndex[show.id] = show.title;
+    self.showIndex[show.id] = show;
 
     var terms = self.canonize(show.title).split(' ');
     terms.forEach(function(term) {
@@ -70,10 +70,7 @@ TypeaheadData.prototype.search = function(query) {
 
   var results = [];
   for (var showId in matchingShows) {
-    results.push({
-      id: showId,
-      title: this.showIndex[showId]
-    });
+    results.push(this.showIndex[showId]);
   }
 
   // TODO: Add a second index to pre-sort
@@ -183,10 +180,7 @@ TypeaheadUI.prototype.setSelected = function(itemId) {
 }
 
 TypeaheadUI.prototype.confirmSelection = function() {
-  var showId = this.data[this.selected].id;
-  var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
-  selectedOption.setAttribute('selected', true);
-
+  searchSelect.selectedIndex = this.data[this.selected].optionIndex;
   this.input.value = this.data[this.selected].title;
 }
 
@@ -287,7 +281,8 @@ for (var i = 1; i < selectOptions.length; i++) {
   var optionElement = selectOptions[i];
   showData.push({
     id: optionElement.getAttribute('value'),
-    title: optionElement.text
+    title: optionElement.text,
+    optionIndex: i
   });
 }
 
@@ -296,7 +291,6 @@ var typeaheadUI = new TypeaheadUI();
 var typeaheadElem = typeaheadUI.getTypeahead();
 typeaheadElem.classList.add('eztv-typeahead');
 
-// TODO: remove anything preselected
 var searchInput = searchForm.getElementsByTagName('div')[0];
 searchInput.parentNode.removeChild(searchInput);
 searchSelect.style.display = 'none';
