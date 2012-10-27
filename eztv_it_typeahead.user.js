@@ -17,7 +17,7 @@ var TypeaheadData = function(showData) {
   showData.forEach(function(show) {
     self.showIndex[show.id] = show;
 
-    var terms = self.canonize(show.title).split(' ');
+    var terms = self.normalize(show.title).split(' ');
     terms.forEach(function(term) {
       if (term in self.invertedIndex) {
         self.invertedIndex[term].push(show.id);
@@ -31,7 +31,7 @@ var TypeaheadData = function(showData) {
   this.showTokens.sort();
 }
 
-TypeaheadData.prototype.canonize = function(query) {
+TypeaheadData.prototype.normalize = function(query) {
   query = query.toLowerCase();
   // Find equivalent terms
   query = query.replace('&', ' and ');
@@ -59,7 +59,7 @@ TypeaheadData.prototype.search = function(query) {
   // TODO: We're doing union, but should be doing intersection... or heuristic
   var matchingShows = {};
 
-  var terms = this.canonize(query).split(' ');
+  var terms = this.normalize(query).split(' ');
   terms.forEach(function(term) {
     var lb = lowerBound(self.showTokens, term);
     var ub = upperBound(self.showTokens, term);
@@ -149,7 +149,7 @@ TypeaheadUI.prototype.getTypeahead = function() {
   });
 
   this.input.addEventListener('keyup', function(e) {
-    var query = typeaheadData.canonize(self.input.value);
+    var query = typeaheadData.normalize(self.input.value);
     if (query == self.lastSearch) {
       return;
     }
