@@ -96,9 +96,6 @@ TypeaheadUI.prototype.getTypeahead = function() {
   this.input = document.createElement('input');
   this.input.setAttribute('type', 'text');
 
-  this.input.style.float = 'left';
-  this.input.style.width = '400px';
-
   this.dropdown = document.createElement('div');
   this.dropdown.className = 'dropdown';
 
@@ -240,10 +237,17 @@ if (searchForm === null) {
   break;
 }
 
-// CSS stuff
-// TODO: Probably want to namespace this stuff
-var autocompleteCss = (
-'.dropdown {' +
+// Add CSS for typeahead elements
+var typeaheadCSS = (
+'.eztv-typeahead {' +
+'  float: left;' +
+'}' +
+
+'.eztv-typeahead input {' +
+'  width: 400px;' +
+'}' +
+
+'.eztv-typeahead .dropdown {' +
 '  min-height: 20px;' +
 '  width: 398px;' +
 '  position: absolute;' +
@@ -255,26 +259,26 @@ var autocompleteCss = (
 '  display: none;' +
 '}' +
 
-'.dropdown a {' +
+'.eztv-typeahead .dropdown a {' +
 '  font-weight: bold;' +
 '  text-decoration: none;' +
 '  display: block;' +
 '}' +
 
-'.dropdown-entry {' +
+'.eztv-typeahead .dropdown-entry {' +
 '  padding: 2px 4px 2px 4px;' +
 '  min-height: 20px;' +
 '}' +
 
-'.dropdown-entry.active {' +
-'  background: #D8EAFC;' +
+'.eztv-typeahead .dropdown-entry.active {' +
+'  background: #d8eafc;' +
 '}');
 
-var autoStyle = document.createElement('style');
-autoStyle.type = 'text/css';
-autoStyle.appendChild(document.createTextNode(autocompleteCss));
+var typeaheadStyle = document.createElement('style');
+typeaheadStyle.type = 'text/css';
+typeaheadStyle.appendChild(document.createTextNode(typeaheadCSS));
 
-document.head.appendChild(autoStyle);
+document.head.appendChild(typeaheadStyle);
 var searchSelect = searchForm.getElementsByTagName('select')[0];
 var selectOptions = searchSelect.getElementsByTagName('option');
 
@@ -290,6 +294,7 @@ for (var i = 1; i < selectOptions.length; i++) {
 var typeaheadData = new TypeaheadData(showData);
 var typeaheadUI = new TypeaheadUI();
 var typeaheadElem = typeaheadUI.getTypeahead();
+typeaheadElem.classList.add('eztv-typeahead');
 
 // TODO: remove anything preselected
 var searchInput = searchForm.getElementsByTagName('div')[0];
