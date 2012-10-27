@@ -84,51 +84,161 @@ TypeaheadData.prototype.search = function(query) {
   return results;
 }
 
-function makeActive(past, future) {
-  if (past != num_results) {
-    var previous = document.getElementById('dropdown-item-' + past);
-    previous.classList.remove('active');
-  }
-  if (future != num_results) {
-    var active = document.getElementById('dropdown-item-' + future);
-    active.classList.add('active');
-  }
+function TypeaheadUI(selectElem) {
+  this.selected = null;
+  this.lastValue = null;
+  this.numResults = null;
 }
 
-function makeSelect(showId) {
+TypeaheadUI.prototype.getTypeahead = function() {
+  var self = this;
+
+  this.input = document.createElement('input');
+  this.input.setAttribute('type', 'text');
+
+  this.input.style.float = 'left';
+  this.input.style.width = '400px';
+
+  this.dropdown = document.createElement('div');
+  this.dropdown.className = 'dropdown';
+
+  this.input.addEventListener('click', function(e) {
+    self.dropdown.style.display = 'block';
+    e.stopPropagation();
+  });
+
+  this.dropdown.addEventListener('click', function(e) {
+    e.preventDefault();
+
+    var showId = e.target.getAttribute('data-show-id');
+    if (showId !== null) {
+      self.setSelected(showId);
+      self.confirmSelection();
+    }
+  });
+
+  this.dropdown.addEventListener('mouseover', function(e) {
+    var itemId = e.target.getAttribute('data-item-id');
+    if (itemId) {
+      self.setSelected(itemId);
+    }
+  });
+
+  document.body.addEventListener('click', function(e) {
+    self.hideDropdown();
+  });
+
+  this.input.addEventListener('keydown', function(e) {
+    if (!/(38|40|13)/.test(e.keyCode)) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.keyCode == 13) {
+      if (self.selected != self.numResults) {
+        self.confirmSelection();
+      }
+
+      self.hideDropdown();
+      return;
+    }
+
+    var next = (e.keyCode == 38) ? self.selected - 1 : self.selected + 1;
+    next = (next + (self.numResults + 1)) % (self.numResults + 1);
+
+    self.setSelected(next);
+  });
+
+  this.input.addEventListener('keyup', function(e) {
+    if (self.input.value == self.lastSearch) {
+      return;
+    }
+
+    self.lastSearch = self.input.value;
+    if (!self.input.value) { // TODO: Fix
+      self.clearResults();
+      return;
+    }
+
+    var showResults = typeaheadData.search(self.input.value);
+    self.displayResults(showResults);
+  });
+
+  var group = document.createElement('div');
+  group.appendChild(this.input);
+  group.appendChild(this.dropdown);
+
+  return group;
+}
+
+TypeaheadUI.prototype.setSelected = function(itemId) {
+  if (this.selected != this.numResults) {
+    var previous = document.getElementById('dropdown-item-' + this.selected);
+    previous.classList.remove('active');
+  }
+  if (itemId != this.numResults) {
+    var active = document.getElementById('dropdown-item-' + itemId);
+    active.classList.add('active');
+  }
+  this.selected = parseInt(itemId);
+}
+
+TypeaheadUI.prototype.confirmSelection = function() {
+  var showId = this.data[this.selected].id;
   var selectedOption = searchSelect.querySelector('[value="' + showId + '"]');
   selectedOption.setAttribute('selected', true);
 
-  newInput.value = selectedOption.text;
-  searchForm.submit();
+  this.input.value = this.data[this.selected].title;
+}
+
+TypeaheadUI.prototype.hideDropdown = function() {
+  this.dropdown.style.display = 'none';
+}
+
+TypeaheadUI.prototype.clearResults = function() {
+  if (this.dropdown.firstChild) {
+    this.dropdown.removeChild(this.dropdown.firstChild);
+  }
+}
+
+TypeaheadUI.prototype.displayResults = function(data) {
+  this.data = data;
+  this.numResults = data.length;
+  this.selected = data.length; // Alias for no selection
+
+  this.clearResults();
+
+  // This wrapper allows us to remove all entries at once
+  var wrapper = document.createElement('div');
+
+  var itemId = 0;
+  data.forEach(function(entry) {
+    var item  = document.createElement('div');
+    item.className = 'dropdown-entry';
+    item.setAttribute('id', 'dropdown-item-' + itemId);
+    item.setAttribute('data-show-id', entry.id);
+    item.setAttribute('data-item-id', itemId);
+    item.appendChild(document.createTextNode(entry.title));
+
+    var linkItem = document.createElement('a');
+    linkItem.setAttribute('href', '#');
+    linkItem.appendChild(item);
+
+    wrapper.appendChild(linkItem);
+    itemId++;
+  });
+
+  this.dropdown.appendChild(wrapper);
 }
 
 do {
-
-// TODO: arrow key navigation
-var selected = null;
-var dropdown_open = false;
-var last_value = null;
-var num_results = null;
 
 var searchForm = document.getElementById('search');
 if (searchForm === null) {
   break;
 }
-
-var searchSelect = searchForm.getElementsByTagName('select')[0];
-var selectOptions = searchSelect.getElementsByTagName('option');
-
-var showData = [];
-for (var i = 1; i < selectOptions.length; i++) {
-  var optionElement = selectOptions[i];
-  showData.push({
-    id: optionElement.getAttribute('value'),
-    title: optionElement.text
-  });
-}
-
-var typeaheadData = new TypeaheadData(showData);
 
 // CSS stuff
 // TODO: Probably want to namespace this stuff
@@ -163,120 +273,30 @@ var autocompleteCss = (
 var autoStyle = document.createElement('style');
 autoStyle.type = 'text/css';
 autoStyle.appendChild(document.createTextNode(autocompleteCss));
-document.head.appendChild(autoStyle);
 
-// DOM stuff
-// TODO: Less hacky
+document.head.appendChild(autoStyle);
+var searchSelect = searchForm.getElementsByTagName('select')[0];
+var selectOptions = searchSelect.getElementsByTagName('option');
+
+var showData = [];
+for (var i = 1; i < selectOptions.length; i++) {
+  var optionElement = selectOptions[i];
+  showData.push({
+    id: optionElement.getAttribute('value'),
+    title: optionElement.text
+  });
+}
+
+var typeaheadData = new TypeaheadData(showData);
+var typeaheadUI = new TypeaheadUI();
+var typeaheadElem = typeaheadUI.getTypeahead();
+
+// TODO: remove anything preselected
 var searchInput = searchForm.getElementsByTagName('div')[0];
 searchInput.parentNode.removeChild(searchInput);
 searchSelect.style.display = 'none';
-
-// Add new stuff
 searchForm.style.position = 'relative';
 
-var newInput = document.createElement('input');
-newInput.setAttribute('type', 'text');
-newInput.style.float = 'left';
-newInput.style.width = '400px';
-
-var dropdown = document.createElement('div');
-dropdown.className = 'dropdown';
-
-dropdown.addEventListener('click', function(e) {
-  e.preventDefault();
-
-  var showId = e.target.getAttribute('data-show-id');
-  console.log(showId);
-  if (showId !== null) {
-    makeSelect(showId);
-  }
-});
-
-dropdown.addEventListener('mouseover', function(e) {
-  var data_item_id = e.target.getAttribute('data-item-id');
-  if (data_item_id) {
-    makeActive(selected, data_item_id);
-    selected = parseInt(data_item_id);
-  }
-});
-
-newInput.addEventListener('click', function(e) {
-  dropdown.style.display = 'block';
-  e.stopPropagation();
-});
-
-document.body.addEventListener('click', function(e) {
-  dropdown.style.display = 'none';
-});
-
-newInput.addEventListener('keydown', function(e) {
-  if (!/(38|40|13)/.test(e.keyCode)) {
-    return;
-  }
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (e.keyCode == 13) {
-    dropdown.style.display = 'none';
-    if (selected != num_results) {
-      var selectedEntry = document.getElementById('dropdown-item-' + selected);
-      makeSelect(selectedEntry.getAttribute('data-show-id'));
-    }
-    return;
-  }
-
-  var newval = (e.keyCode == 38) ? selected - 1 : selected + 1;
-  newval = (newval + (num_results + 1)) % (num_results + 1);
-
-  makeActive(selected, newval);
-  selected = newval;
-});
-
-// Major sites poll input repeatedly for better feel
-newInput.addEventListener('keyup', function(e) {
-  if (newInput.value == last_value) {
-    return;
-  }
-  last_value = newInput.value;
-
-  if (dropdown.firstChild) {
-    dropdown.removeChild(dropdown.firstChild);
-  }
-
-  if (!newInput.value) {
-    return;
-  }
-
-  var showResults = typeaheadData.search(newInput.value);
-  num_results = showResults.length;
-  selected = num_results;
-
-  // This wrapper allows us to remove all entries at once
-  var dropdownEntryWrapper = document.createElement('div');
-
-  var item_id = 0;
-  showResults.forEach(function(show) {
-    var dropdownEntry = document.createElement('div');
-    dropdownEntry.className = 'dropdown-entry';
-    dropdownEntry.setAttribute('id', 'dropdown-item-' + item_id);
-    dropdownEntry.setAttribute('data-show-id', show.id);
-    dropdownEntry.setAttribute('data-item-id', item_id);
-    dropdownEntry.appendChild(document.createTextNode(show.title));
-
-    var dropdownLinkEntry = document.createElement('a');
-    dropdownLinkEntry.setAttribute('href', '#');
-    dropdownLinkEntry.appendChild(dropdownEntry);
-
-    dropdownEntryWrapper.appendChild(dropdownLinkEntry);
-
-    item_id++;
-  });
-
-  dropdown.appendChild(dropdownEntryWrapper);
-});
-
-searchForm.insertBefore(dropdown, searchForm.firstChild);
-searchForm.insertBefore(newInput, searchForm.firstChild);
+searchForm.insertBefore(typeaheadElem, searchForm.firstChild);
 
 } while(0);
