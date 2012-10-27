@@ -73,9 +73,8 @@ TypeaheadData.prototype.search = function(query) {
     results.push(this.showIndex[showId]);
   }
 
-  // TODO: Add a second index to pre-sort
   results.sort(function(a, b) {
-    return (a.title < b.title) ? -1 : 1;
+    return a.optionIndex - b.optionIndex;
   });
 
   return results;
@@ -201,7 +200,6 @@ TypeaheadUI.prototype.displayResults = function(data) {
 
   this.clearResults();
 
-  // This wrapper allows us to remove all entries at once
   var wrapper = document.createElement('div');
 
   var itemId = 0;
