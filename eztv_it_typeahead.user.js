@@ -32,8 +32,12 @@ var TypeaheadData = function(showData) {
 }
 
 TypeaheadData.prototype.canonize = function(query) {
-  // TODO: Spend more time on this
-  return query.toLowerCase().replace('&', 'and').replace(/[^a-z0-9 ]/g, '');
+  query = query.toLowerCase();
+  // Find equivalent terms
+  query = query.replace('&', ' and ');
+  // Remove characters we don't find meaningful
+  query = query.replace(/[^a-z0-9 ]/g, '');
+  return query.replace(/\s+/g, ' ').trim();
 }
 
 TypeaheadData.prototype.search = function(query) {
@@ -145,18 +149,19 @@ TypeaheadUI.prototype.getTypeahead = function() {
   });
 
   this.input.addEventListener('keyup', function(e) {
-    if (self.input.value == self.lastSearch) {
+    var query = typeaheadData.canonize(self.input.value);
+    if (query == self.lastSearch) {
       return;
     }
 
-    self.lastSearch = self.input.value;
-    if (!self.input.value) { // TODO: Fix
+    if (query == '') {
       self.clearResults();
       return;
     }
 
-    var showResults = typeaheadData.search(self.input.value);
+    var showResults = typeaheadData.search(query);
     self.displayResults(showResults);
+    self.lastSearch = query;
   });
 
   var group = document.createElement('div');
