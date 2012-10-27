@@ -1,4 +1,4 @@
-EZTV Autocomplete
-=================
+EZTV Typeahead
+==============
 
-A userscript replacing eztv.it's current search UI with a TV show autocomplete.
+A userscript replacing eztv.it's current search input with a typeahead.
