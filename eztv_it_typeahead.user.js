@@ -218,8 +218,15 @@ TypeaheadUI.prototype.setSelected = function(itemId) {
 }
 
 TypeaheadUI.prototype.confirmSelection = function() {
-  searchSelect.selectedIndex = this.data[this.selected].id;
-  this.input.value = this.data[this.selected].title;
+  if (this.selected != this.numResults) {
+    searchSelect.selectedIndex = this.data[this.selected].id;
+    this.input.value = this.data[this.selected].title;
+    searchForm.submit();
+  }
+}
+
+TypeaheadUI.prototype.clearSelection = function() {
+  searchSelect.selectedIndex = -1;
 }
 
 TypeaheadUI.prototype.hideDropdown = function() {
@@ -230,6 +237,7 @@ TypeaheadUI.prototype.clearResults = function() {
   if (this.dropdown.firstChild) {
     this.dropdown.removeChild(this.dropdown.firstChild);
   }
+  this.clearSelection();
 }
 
 TypeaheadUI.prototype.displayResults = function(data) {
@@ -326,10 +334,17 @@ var typeaheadUI = new TypeaheadUI();
 var typeaheadElem = typeaheadUI.getTypeahead();
 typeaheadElem.classList.add('eztv-typeahead');
 
-var searchInput = searchForm.getElementsByTagName('div')[0];
-searchInput.parentNode.removeChild(searchInput);
+searchForm.getElementsByTagName('div')[0].style.display = 'none';
 searchSelect.style.display = 'none';
 searchForm.style.position = 'relative';
 
+var searchInput = searchForm.getElementsByTagName('input')[0];
+
 searchForm.insertBefore(typeaheadElem, searchForm.firstChild);
+searchForm.addEventListener('submit', function(e) {
+  if (searchSelect.selectedIndex == -1) {
+    searchInput.value = typeaheadElem.firstChild.value; // TODO: Unclean
+  }
+});
+
 } while(0);
