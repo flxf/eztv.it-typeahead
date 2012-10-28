@@ -2,3 +2,16 @@ EZTV Typeahead
 ==============
 
 A userscript replacing eztv.it's current search input with a typeahead.
+
+Installation
+------------
+
+### Installing for Chrome ###
+
+1. Navigate to chrome://extensions
+2. Drag eztv_it_typeahead.js onto your browser window.
+3. When asked for permissions, click 'Add'.
+
+### Installing for Firefox ###
+
+1. Greasemonkey
