@@ -56,32 +56,66 @@ TypeaheadData.prototype.search = function(query) {
     return lowerBound(arr, key);
   }
 
-  // TODO: We're doing union, but should be doing intersection... or heuristic
-  var matchingShows = {};
+  function union(listA, listB) {
+    var i = 0, j = 0;
+    var results = [];
+    while (i < listA.length && j < listB.length) {
+      if (listA[i] == listB[j]) {
+        results.push(listA[i]);
+        i++;
+        j++;
+      } else if (listA[i] < listB[j]) {
+        results.push(listA[i]);
+        i++;
+      } else {
+        results.push(listB[j]);
+        j++;
+      }
+    }
+    return results.concat(listA.slice(i)).concat(listB.slice(j));
+  }
+
+  function intersection(listA, listB) {
+    var i = 0, j = 0;
+    var results = [];
+    while (i < listA.length && j < listB.length) {
+      if (listA[i] == listB[j]) {
+        results.push(listA[i]);
+        i++;
+        j++;
+      } else if (listA[i] < listB[j]) {
+        i++;
+      } else {
+        j++;
+      }
+    }
+    return results;
+  }
+
+  var andResults = null;
 
   var terms = this.normalize(query).split(' ');
   terms.forEach(function(term) {
     var lb = lowerBound(self.showTokens, term);
     var ub = upperBound(self.showTokens, term);
 
+    // Disjunction
+    var orResults = [];
     for (var i = lb; i < ub; i++) {
-      var submatch = self.invertedIndex[self.showTokens[i]];
-      for (var j = 0; j < submatch.length; j++) {
-        matchingShows[submatch[j]] = 1;
-      }
+      var matchList = self.invertedIndex[self.showTokens[i]];
+      orResults = union(orResults, matchList);
+    }
+
+    if (andResults == null) {
+      andResults = orResults;
+    } else {
+      andResults = intersection(andResults, orResults);
     }
   });
 
-  var results = [];
-  for (var itemId in matchingShows) {
-    results.push(this.showIndex[itemId]);
-  }
-
-  results.sort(function(a, b) {
-    return a.id - b.id;
+  return andResults.map(function(itemId) {
+    return self.showIndex[itemId];
   });
-
-  return results;
 }
 
 function TypeaheadUI(selectElem) {
@@ -298,5 +332,4 @@ searchSelect.style.display = 'none';
 searchForm.style.position = 'relative';
 
 searchForm.insertBefore(typeaheadElem, searchForm.firstChild);
-
 } while(0);
