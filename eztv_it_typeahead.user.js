@@ -73,12 +73,12 @@ TypeaheadData.prototype.search = function(query) {
   });
 
   var results = [];
-  for (var showId in matchingShows) {
-    results.push(this.showIndex[showId]);
+  for (var itemId in matchingShows) {
+    results.push(this.showIndex[itemId]);
   }
 
   results.sort(function(a, b) {
-    return a.optionIndex - b.optionIndex;
+    return a.id - b.id;
   });
 
   return results;
@@ -107,9 +107,9 @@ TypeaheadUI.prototype.getTypeahead = function() {
   this.dropdown.addEventListener('click', function(e) {
     e.preventDefault();
 
-    var showId = e.target.getAttribute('data-show-id');
-    if (showId !== null) {
-      self.setSelected(showId);
+    var itemId = e.target.getAttribute('data-item-id');
+    if (itemId !== null) {
+      self.setSelected(itemId);
       self.confirmSelection();
     }
   });
@@ -184,7 +184,7 @@ TypeaheadUI.prototype.setSelected = function(itemId) {
 }
 
 TypeaheadUI.prototype.confirmSelection = function() {
-  searchSelect.selectedIndex = this.data[this.selected].optionIndex;
+  searchSelect.selectedIndex = this.data[this.selected].id;
   this.input.value = this.data[this.selected].title;
 }
 
@@ -212,7 +212,6 @@ TypeaheadUI.prototype.displayResults = function(data) {
     var item  = document.createElement('div');
     item.className = 'dropdown-entry';
     item.setAttribute('id', 'dropdown-item-' + itemId);
-    item.setAttribute('data-show-id', entry.id);
     item.setAttribute('data-item-id', itemId);
     item.appendChild(document.createTextNode(entry.title));
 
@@ -283,9 +282,8 @@ var showData = [];
 for (var i = 1; i < selectOptions.length; i++) {
   var optionElement = selectOptions[i];
   showData.push({
-    id: optionElement.getAttribute('value'),
-    title: optionElement.text,
-    optionIndex: i
+    id: i,
+    title: optionElement.text
   });
 }
 
