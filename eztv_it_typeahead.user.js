@@ -4,6 +4,7 @@
 // @namespace ffx
 // @version 1
 // @match http://eztv.it/*
+// @match https://eztv.it/*
 // ==/UserScript==
 
 var TypeaheadData = function(showData) {
